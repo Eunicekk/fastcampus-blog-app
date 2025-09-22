@@ -7,11 +7,13 @@ import PostDetailPage from 'pages/posts/detail';
 import ProfilePage from 'pages/profile';
 import Login from 'pages/login';
 import Signup from 'pages/signup';
-import { useState } from 'react';
 
-export default function Router() {
-  const [isAuth, setIsAuth] = useState<boolean>(false);
+interface RouterProps {
+  isAuth: boolean;
+}
 
+export default function Router({ isAuth }: RouterProps) {
+  console.log(isAuth, 'isAuth');
   return (
     <>
       <Routes>

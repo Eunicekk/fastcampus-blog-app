@@ -69,15 +69,22 @@ export default function SignupForm() {
       <h1 className="form__title">회원가입</h1>
       <div className="form__block">
         <label htmlFor="email">이메일</label>
-        <input type="email" name="email" id="email" required onChange={onChange} />
+        <input type="email" name="email" id="email" required onChange={onChange} value={email} />
       </div>
       <div className="form__block">
         <label htmlFor="password">패스워드</label>
-        <input type="password" name="password" id="password" required onChange={onChange} />
+        <input type="password" name="password" id="password" required onChange={onChange} value={password} />
       </div>
       <div className="form__block">
         <label htmlFor="password_confirm">패스워드 확인</label>
-        <input type="password" name="password_confirm" id="password_confirm" required onChange={onChange} />
+        <input
+          type="password"
+          name="password_confirm"
+          id="password_confirm"
+          required
+          onChange={onChange}
+          value={passwordConfirm}
+        />
       </div>
       {error && error?.length > 0 && (
         <div className="form__block">

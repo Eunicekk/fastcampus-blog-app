@@ -13,7 +13,6 @@ interface RouterProps {
 }
 
 export default function Router({ isAuth }: RouterProps) {
-  console.log(isAuth, 'isAuth');
   return (
     <>
       <Routes>

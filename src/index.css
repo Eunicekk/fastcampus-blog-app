@@ -211,6 +211,7 @@ footer a:hover {
 .post__delete:hover,
 .post__delete:focus {
   color: black;
+  cursor: pointer;
 }
 
 /* post-detail */

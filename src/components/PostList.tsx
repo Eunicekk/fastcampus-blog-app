@@ -1,11 +1,13 @@
 import AuthContext from 'context/AuthContext';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from 'firebaseApp';
 import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 interface PostListProps {
   hasNavigation?: boolean;
+  defaultTab?: TabType | CategoryType;
 }
 
 type TabType = 'all' | 'my';
@@ -17,25 +19,54 @@ export interface PostProps {
   summary: string;
   content: string;
   createdAt: string;
+  updatedAt: string;
+  uid: string;
+  category: CategoryType;
 }
 
-export default function PostList({ hasNavigation = true }: PostListProps) {
+export type CategoryType = 'Frontend' | 'Backend' | 'Web' | 'Native';
+export const CATEGORIES: CategoryType[] = ['Frontend', 'Backend', 'Web', 'Native'];
+
+export default function PostList({ hasNavigation = true, defaultTab = 'all' }: PostListProps) {
   const { user } = useContext(AuthContext);
-  const [activeTab, setAcitveTap] = useState<TabType>('all');
+  const [activeTab, setAcitveTap] = useState<TabType | CategoryType>(defaultTab);
   const [posts, setPosts] = useState<PostProps[]>([]);
 
   const getPosts = async () => {
-    const datas = await getDocs(collection(db, 'posts'));
+    setPosts([]);
 
+    let postsRef = collection(db, 'posts');
+    let postsQuery;
+
+    if (activeTab === 'my' && user) {
+      postsQuery = query(postsRef, where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
+    } else if (activeTab === 'all') {
+      postsQuery = query(postsRef, orderBy('createdAt', 'desc'));
+    } else {
+      postsQuery = query(postsRef, where('category', '==', activeTab), orderBy('createdAt', 'desc'));
+    }
+
+    const datas = await getDocs(postsQuery);
     datas?.forEach((doc) => {
       const dataObj = { ...doc.data(), id: doc.id };
       setPosts((prev) => [...prev, dataObj as PostProps]);
     });
   };
 
+  const handleDelete = async (id: string) => {
+    const confirm = window.confirm('게시물을 삭제하시겠습니까?');
+
+    if (confirm && id) {
+      await deleteDoc(doc(db, 'posts', id));
+      toast.success('게시물 삭제가 완료되었습니다.');
+      getPosts();
+    }
+  };
+
   useEffect(() => {
     getPosts();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   return (
     <>
@@ -55,6 +86,16 @@ export default function PostList({ hasNavigation = true }: PostListProps) {
           >
             나의 글
           </div>
+          {CATEGORIES.map((category) => (
+            <div
+              role="presentation"
+              onClick={() => setAcitveTap(category)}
+              className={activeTab === category ? 'post__navigation--active' : ''}
+              key={category}
+            >
+              {category}
+            </div>
+          ))}
         </nav>
       )}
       <div className="post__list">
@@ -75,7 +116,9 @@ export default function PostList({ hasNavigation = true }: PostListProps) {
                   <div className="post__edit">
                     <Link to={`/posts/edit/${post?.id}`}>수정</Link>
                   </div>
-                  <div className="post__delete">삭제</div>
+                  <div className="post__delete" onClick={() => handleDelete(post.id as string)}>
+                    삭제
+                  </div>
                 </div>
               )}
             </div>

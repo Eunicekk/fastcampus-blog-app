@@ -1,5 +1,5 @@
 import AuthContext from 'context/AuthContext';
-import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from 'firebaseApp';
 import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 
 interface PostListProps {
   hasNavigation?: boolean;
+  defaultTab?: TabType;
 }
 
 type TabType = 'all' | 'my';
@@ -22,15 +23,24 @@ export interface PostProps {
   uid: string;
 }
 
-export default function PostList({ hasNavigation = true }: PostListProps) {
+export default function PostList({ hasNavigation = true, defaultTab = 'all' }: PostListProps) {
   const { user } = useContext(AuthContext);
-  const [activeTab, setAcitveTap] = useState<TabType>('all');
+  const [activeTab, setAcitveTap] = useState<TabType>(defaultTab);
   const [posts, setPosts] = useState<PostProps[]>([]);
 
   const getPosts = async () => {
-    const datas = await getDocs(collection(db, 'posts'));
     setPosts([]);
 
+    let postsRef = collection(db, 'posts');
+    let postsQuery;
+
+    if (activeTab === 'my' && user) {
+      postsQuery = query(postsRef, where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
+    } else {
+      postsQuery = query(postsRef, orderBy('createdAt', 'desc'));
+    }
+
+    const datas = await getDocs(postsQuery);
     datas?.forEach((doc) => {
       const dataObj = { ...doc.data(), id: doc.id };
       setPosts((prev) => [...prev, dataObj as PostProps]);
@@ -43,12 +53,14 @@ export default function PostList({ hasNavigation = true }: PostListProps) {
     if (confirm && id) {
       await deleteDoc(doc(db, 'posts', id));
       toast.success('게시물 삭제가 완료되었습니다.');
+      getPosts();
     }
   };
 
   useEffect(() => {
     getPosts();
-  }, [posts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   return (
     <>
